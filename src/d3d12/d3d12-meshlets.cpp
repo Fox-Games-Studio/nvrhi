@@ -273,7 +273,15 @@ namespace nvrhi::d3d12
             m_Instance->referencedResources.push_back(framebuffer);
         }
 
-        setGraphicsBindings(state.bindings, bindingUpdateMask, state.indirectParams, updateIndirectParams, pso->rootSignature);
+        if (m_EnableAutomaticBarriers && framebuffer && (m_BindingStatesDirty || updateFramebuffer))
+        {
+            setResourceStatesForFramebuffer(framebuffer);
+        }
+        
+        setGraphicsBindings(state.bindings, bindingUpdateMask,
+            state.indirectParams, updateIndirectParams,
+            nullptr, false, // <-- indirect count buffer not supported for meshlets
+            pso->rootSignature);
         
         commitBarriers();
 
@@ -300,6 +308,7 @@ namespace nvrhi::d3d12
         m_CurrentRayTracingStateValid = false;
         m_CurrentMeshletState = state;
         m_CurrentMeshletState.dynamicStencilRefValue = effectiveStencilRefValue;
+        m_BindingStatesDirty = false;
     }
 
     void CommandList::dispatchMesh(uint32_t groupsX, uint32_t groupsY /*= 1*/, uint32_t groupsZ /*= 1*/)
